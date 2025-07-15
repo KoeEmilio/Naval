@@ -5,18 +5,17 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments('id')                                    
-      
-      table.integer('gameId').unsigned().notNullable()          
+      table.increments('id')
+
+      table.integer('gameId').unsigned().notNullable()
       table.foreign('gameId').references('id').inTable('game').onDelete('CASCADE')
-      
-      table.integer('playerId').unsigned().notNullable()        
+
+      table.integer('playerId').unsigned().notNullable()
       table.foreign('playerId').references('id').inTable('users').onDelete('CASCADE')
-      
-      // Estas son las columnas correctas para moves según tu modelo
-      table.integer('x').unsigned().notNullable()               
-      table.integer('y').unsigned().notNullable()               
-      table.string('result', 4).notNullable()                   
+
+      table.integer('x').unsigned().notNullable()
+      table.integer('y').unsigned().notNullable()
+      table.string('result', 4).notNullable()
 
       table.timestamp('created_at').notNullable().defaultTo(this.now())
       table.timestamp('updated_at').notNullable().defaultTo(this.now())

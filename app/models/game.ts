@@ -3,10 +3,11 @@ import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import Board from './board.js'
 import Move from './move.js'
+import { DateTime } from 'luxon'
 
 export default class Game extends BaseModel {
   static table = 'game'
-  static timestamps = false
+  static timestamps = true
 
   @column({ isPrimary: true })
   declare id: number
@@ -23,14 +24,25 @@ export default class Game extends BaseModel {
   @column()
   declare winner: number | null
 
-  // Relaciones
+  @column()
+  declare player_1_inactive_misses: number
+
+  @column()
+  declare player_2_inactive_misses: number
+
+  @column.dateTime({ autoCreate: true })
+  declare created_at: DateTime
+
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updated_at: DateTime
+
   @belongsTo(() => User, {
-    foreignKey: 'player_1'
+    foreignKey: 'player_1',
   })
   declare player1: BelongsTo<typeof User>
 
   @belongsTo(() => User, {
-    foreignKey: 'player_2'
+    foreignKey: 'player_2',
   })
   declare player2: BelongsTo<typeof User>
 

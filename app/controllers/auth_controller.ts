@@ -4,7 +4,6 @@ import User from '#models/user'
 import hash from '@adonisjs/core/services/hash'
 
 export default class AuthController {
-
   async register({ request, response }: HttpContext) {
     const registerValidator = vine.compile(
       vine.object({
@@ -19,14 +18,14 @@ export default class AuthController {
     const existingUser = await User.findBy('email', data.email)
     if (existingUser) {
       return response.badRequest({
-        error: 'Ya existe un usuario con este email'
+        error: 'Ya existe un usuario con este email',
       })
     }
 
     const user = await User.create({
       fullName: data.fullName,
       email: data.email,
-      password: data.password, 
+      password: data.password,
     })
 
     const token = await User.accessTokens.create(user)
@@ -36,12 +35,12 @@ export default class AuthController {
       user: {
         id: user.id,
         fullName: user.fullName,
-        email: user.email
+        email: user.email,
       },
       token: {
         type: 'Bearer',
-        value: token.value!.release()
-      }
+        value: token.value!.release(),
+      },
     })
   }
 
@@ -49,7 +48,7 @@ export default class AuthController {
     const loginValidator = vine.compile(
       vine.object({
         email: vine.string().email().normalizeEmail(),
-        password: vine.string().minLength(1)
+        password: vine.string().minLength(1),
       })
     )
 
@@ -58,19 +57,19 @@ export default class AuthController {
     try {
       // Buscar usuario por email
       const user = await User.findBy('email', email)
-      
+
       if (!user) {
         return response.badRequest({
-          error: 'Credenciales incorrectas'
+          error: 'Credenciales incorrectas',
         })
       }
 
       // Verificar password
       const isValidPassword = await hash.verify(user.password, password)
-      
+
       if (!isValidPassword) {
         return response.badRequest({
-          error: 'Credenciales incorrectas'
+          error: 'Credenciales incorrectas',
         })
       }
 
@@ -82,41 +81,38 @@ export default class AuthController {
         user: {
           id: user.id,
           fullName: user.fullName,
-          email: user.email
+          email: user.email,
         },
         token: {
           type: 'Bearer',
-          value: token.value!.release()
-        }
+          value: token.value!.release(),
+        },
       })
-
     } catch (error) {
       return response.badRequest({
-        error: 'Error en el proceso de autenticación'
+        error: 'Error en el proceso de autenticación',
       })
     }
   }
-
 
   async logout({ auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
       const token = auth.user?.currentAccessToken
-      
+
       if (token) {
         await User.accessTokens.delete(user, token.identifier)
       }
-      
+
       return response.json({
-        message: 'Sesión cerrada exitosamente'
+        message: 'Sesión cerrada exitosamente',
       })
     } catch (error) {
       return response.badRequest({
-        error: 'Error al cerrar sesión'
+        error: 'Error al cerrar sesión',
       })
     }
   }
-
 
   async me({ auth, response }: HttpContext) {
     try {
@@ -126,12 +122,12 @@ export default class AuthController {
         user: {
           id: user.id,
           fullName: user.fullName,
-          email: user.email
-        }
+          email: user.email,
+        },
       })
     } catch (error) {
       return response.unauthorized({
-        error: 'No autenticado'
+        error: 'No autenticado',
       })
     }
   }

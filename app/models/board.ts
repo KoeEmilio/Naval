@@ -18,7 +18,7 @@ export default class Board extends BaseModel {
   @column({
     columnName: 'grid',
     prepare: (value: any) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value)
+    consume: (value: string) => JSON.parse(value),
   })
   declare grid: any[]
 
@@ -27,7 +27,7 @@ export default class Board extends BaseModel {
   declare game: BelongsTo<typeof Game>
 
   @belongsTo(() => User, {
-    foreignKey: 'playerId'
+    foreignKey: 'playerId',
   })
   declare player: BelongsTo<typeof User>
 }

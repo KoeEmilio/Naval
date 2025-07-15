@@ -23,10 +23,10 @@ export default class Move extends BaseModel {
   @column()
   declare result: string
 
-  @column.dateTime({ autoCreate: true, columnName: 'createdAt' })
+  @column.dateTime({ autoCreate: true, columnName: 'created_at' })
   declare createdAt: DateTime
 
-  @column.dateTime({ autoCreate: true, autoUpdate: true, columnName: 'updatedAt' })
+  @column.dateTime({ autoCreate: true, autoUpdate: true, columnName: 'updated_at' })
   declare updatedAt: DateTime
 
   // Relaciones
@@ -34,7 +34,7 @@ export default class Move extends BaseModel {
   declare game: BelongsTo<typeof Game>
 
   @belongsTo(() => User, {
-    foreignKey: 'playerId'
+    foreignKey: 'playerId',
   })
   declare player: BelongsTo<typeof User>
 }

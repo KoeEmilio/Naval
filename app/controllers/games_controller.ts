@@ -10,6 +10,7 @@ export default class GamesController {
   async index({ auth }: HttpContext) {
     const games = await Game.query()
       .where('status', 'waiting')
+      .whereNot('player_1', auth.user!.id)
       .preload('player1')
 
     return {
@@ -25,11 +26,28 @@ export default class GamesController {
     const game = await Game.create({
       player_1: auth.user!.id,
       status: 'waiting',
+      player_1_inactive_misses: 0, // Inicializar contador de fallos por inactividad
+      player_2_inactive_misses: 0, // Inicializar contador de fallos por inactividad
     })
 
     await this.generateBoard(game, auth.user!)
 
-    return response.redirect(`/games/${game.id}/play`)
+    await game.load('player1')
+
+    console.log('Juego creado', game.id)
+
+    return response.json({
+      game: {
+        id: game.id,
+        player_1: game.player_1,
+        player_2: game.player_2,
+        status: game.status,
+        player_1_inactive_misses: game.player_1_inactive_misses,
+        player_2_inactive_misses: game.player_2_inactive_misses,
+        created_at: game.created_at,
+        player1: game.player1,
+      },
+    })
   }
 
   /**
@@ -40,18 +58,41 @@ export default class GamesController {
 
     if (game.status !== 'waiting') {
       return response.badRequest({
-        error: 'El juego ya ha comenzado o ha finalizado.'
+        error: 'El juego ya ha comenzado o ha finalizado.',
       })
     }
 
-    await game.merge({
-      player_2: auth.user!.id,
-      status: 'active',
-    }).save()
+    await game
+      .merge({
+        player_2: auth.user!.id,
+        status: 'active',
+        player_2_inactive_misses: 0, // Asegurarse de inicializar el contador para player_2
+      })
+      .save()
 
     await this.generateBoard(game, auth.user!)
 
-    return response.redirect(`/games/${game.id}/play`)
+    await game.load('player1')
+    await game.load('player2')
+    await game.load('boards')
+    await game.load('moves')
+
+    console.log('Usuario unido al juego', game.id, 'como player_2:', auth.user!.id)
+
+    return response.json({
+      game: {
+        id: game.id,
+        player_1: game.player_1,
+        player_2: game.player_2,
+        status: game.status,
+        player_1_inactive_misses: game.player_1_inactive_misses,
+        player_2_inactive_misses: game.player_2_inactive_misses,
+        player1: game.player1,
+        player2: game.player2,
+        boards: game.boards,
+        moves: game.moves,
+      },
+    })
   }
 
   /**
@@ -59,7 +100,9 @@ export default class GamesController {
    */
   private async generateBoard(game: Game, user: User) {
     // Crear grilla 8x8 llena de ceros
-    const grid = Array(8).fill(null).map(() => Array(8).fill(0))
+    const grid = Array(8)
+      .fill(null)
+      .map(() => Array(8).fill(0))
     const positions = new Set<string>()
 
     // Colocar 15 barcos aleatoriamente
@@ -94,7 +137,19 @@ export default class GamesController {
       .firstOrFail()
 
     return {
-      game,
+      game: {
+        id: game.id,
+        player_1: game.player_1,
+        player_2: game.player_2,
+        status: game.status,
+        winner: game.winner,
+        player_1_inactive_misses: game.player_1_inactive_misses,
+        player_2_inactive_misses: game.player_2_inactive_misses,
+        player1: game.player1,
+        player2: game.player2,
+        boards: game.boards,
+        moves: game.moves,
+      },
       auth: { user: auth.user },
     }
   }
@@ -106,8 +161,7 @@ export default class GamesController {
     const games = await Game.query()
       .where('status', 'finished')
       .where((query) => {
-        query.where('player_1', auth.user!.id)
-          .orWhere('player_2', auth.user!.id)
+        query.where('player_1', auth.user!.id).orWhere('player_2', auth.user!.id)
       })
       .preload('moves', (movesQuery) => {
         movesQuery.preload('player')
@@ -120,5 +174,24 @@ export default class GamesController {
       games,
       auth: { user: auth.user },
     }
+  }
+
+  async cancel({ params, auth, response }: HttpContext) {
+    const game = await Game.findOrFail(params.id)
+    if (game.player_1 !== auth.user!.id || game.status !== 'waiting') {
+      return response.badRequest({ error: 'No puedes cancelar este juego' })
+    }
+    await game.merge({ status: 'cancelled' }).save()
+    return { message: 'Juego cancelado', game }
+  }
+
+  async abandon({ params, auth, response }: HttpContext) {
+    const game = await Game.findOrFail(params.id)
+    if (game.status !== 'active') {
+      return response.badRequest({ error: 'El juego no está activo' })
+    }
+    const winner = game.player_1 === auth.user!.id ? game.player_2 : game.player_1
+    await game.merge({ status: 'finished', winner }).save()
+    return { message: 'Juego abandonado', game }
   }
 }

@@ -7,17 +7,16 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id')
 
-       table.integer('player_1').unsigned().notNullable()        // FK a users
+      table.integer('player_1').unsigned().notNullable()
       table.foreign('player_1').references('id').inTable('users').onDelete('CASCADE')
-      
-      table.integer('player_2').unsigned().nullable()           // FK a users (nullable porque puede no tener segundo jugador al inicio)
+
+      table.integer('player_2').unsigned().nullable()
       table.foreign('player_2').references('id').inTable('users').onDelete('CASCADE')
-      
-      table.string('status', 20).notNullable()                  // 'waiting' | 'active' | 'finished'
-      
-      table.integer('winner').unsigned().nullable()             // FK a users (cambié de string a integer)
+
+      table.string('status', 20).notNullable()
+
+      table.integer('winner').unsigned().nullable()
       table.foreign('winner').references('id').inTable('users').onDelete('SET NULL')
-      
     })
   }
 
